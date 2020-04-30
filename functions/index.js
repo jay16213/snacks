@@ -45,20 +45,14 @@ exports.getSnacks = functions.https.onRequest((req, res) => {
 
 exports.buySnack = functions.https.onRequest((req, res) => {
   let payload = JSON.parse(req.body.payload)
-  console.log(payload)
-
   let user = payload.user
   let payment = parseInt(payload.actions[0].value)
 
-  console.log(user)
-  console.log(payload.actions)
-  console.log(payment)
-
   let walletRef = db.collection('wallets').doc(user.id)
   walletRef.get()
-    .then(wallet => {
+    .then(walletDoc => {
       // if there is a new user -> create a new wallet
-      if (!wallet.exists) {
+      if (!walletDoc.exists) {
         let newBalance = 0 - payment
         walletRef.set({
           'id': user.id,
@@ -71,7 +65,7 @@ exports.buySnack = functions.https.onRequest((req, res) => {
         })
       } else {
       // existing user -> udpate wallet
-        let newBalance = wallet - payment
+        let newBalance = walletDoc.data().balance - payment
         walletRef.update({
           'balance': newBalance
         }).then(() => {
@@ -80,6 +74,34 @@ exports.buySnack = functions.https.onRequest((req, res) => {
           console.log(err)
           res.status(500).json(error, err)
         })
+      }
+    })
+    .catch(err => {
+      console.log(err)
+      res.status(500).json(error, err)
+    })
+})
+
+exports.checkWallet = functions.https.onRequest((req, res) => {
+  let user_id = req.body.user_id
+  let user_name = req.body.user_name
+  let walletRef = db.collection('wallets').doc(user_id)
+  walletRef.get()
+    .then(walletDoc => {
+      // if there is a new user -> create a new wallet
+      if (!walletDoc.exists) {
+        walletRef.set({
+          'id': user_id,
+          'name': user_name,
+          'balance': 0
+        }).then(() => {
+          res.status(200).send(`You are a new user! Your wallet has $NT 0 now.`)
+        }).catch(err => {
+          res.status(500).json(error, err)
+        })
+      } else {
+        // existing user -> return balance
+        res.status(200).send(`Your wallet has $NT ${walletDoc.data().balance}.`)
       }
     })
     .catch(err => {
