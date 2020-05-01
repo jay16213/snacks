@@ -119,4 +119,98 @@ router.post('/wallet', (req, res) => {
     })
 })
 
+router.post('/sell', (req, res) => {
+  let user_id = req.body.user_id
+  let user_name = req.body.user_name
+  let requestStr = req.body.text
+
+  let walletRef = db.collection('wallets').doc(user_id)
+  walletRef.get()
+    .then(walletDoc => {
+      // if there is a new user -> reject
+      if (!walletDoc.exists) {
+        res.status(200).send(`Only an existing user can sell snacks. Create your wallet by typing '/wallet'`)
+      } else {
+        // existing user -> parse the request
+        let substr = String(requestStr).split(' ')
+        if (substr.length != 3) {
+          res.status(200).send(`wrong input format`)
+        } else {
+          let snackName = substr[0]
+          let amount = parseInt(substr[1])
+          let totalPrice = parseInt(substr[2])
+
+          newSnack(walletRef, walletDoc, snackName, amount, totalPrice, res)
+        }
+      }
+    })
+    .catch(err => {
+      console.log(err)
+      res.status(500).json(error, err)
+    })
+})
+
+let calculatePrice = (amount, totalPrice) => {
+  let price = totalPrice / amount
+  let carry = price % 10
+
+  // round
+  switch (carry) {
+    case 1:
+    case 2:
+      price -= carry
+      break
+    case 3:
+      price += 2
+      break
+    case 4:
+      price += 1
+      break
+    case 6:
+      price -= 1
+      break
+    case 7:
+      price -= 2
+      break
+    case 8:
+      price += 2
+      break
+    case 9:
+      price += 1
+      break
+  }
+  return price
+}
+
+let newSnack = (walletRef, walletDoc, snackName, amount, totalPrice, res) => {
+  let price = calculatePrice(amount, totalPrice)
+
+  db.collection('store').add({
+    name: snackName,
+    amount: amount,
+    price: price
+  })
+  .then(() => {
+    let snackInfo = `New Snack: ${snackName}, amount: ${amount}, price: $NT ${price} for each.`
+    updateWallet(walletRef, walletDoc, totalPrice, snackInfo, res)
+  }).catch(err => {
+    console.error(err)
+    res.status(500).json(error, err)
+  })
+
+}
+
+let updateWallet = (walletRef, walletDoc, moneyReturn, snackInfo, res) => {
+  let newBalance = walletDoc.data().balance + moneyReturn
+
+  walletRef.update({
+    'balance': newBalance
+  }).then(() => {
+    res.status(200).send(`${snackInfo}.\nReturn ${moneyReturn} to you. Your wallet has $NT ${newBalance} now`)
+  }).catch(err => {
+    console.log(err)
+    res.status(500).json(error, err)
+  })
+}
+
 module.exports = router
