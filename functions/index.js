@@ -4,7 +4,7 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 let db = admin.firestore();
 
-exports.getSnacks = functions.https.onRequest((req, res) => {
+exports.getSnacks = functions.region('asia-northeast1').https.onRequest((req, res) => {
   // https://api.slack.com/legacy/message-buttons
   let slackInteractiveRes = {
     'text': 'Would you like to buy a snack?',
@@ -43,7 +43,7 @@ exports.getSnacks = functions.https.onRequest((req, res) => {
     })
 })
 
-exports.buySnack = functions.https.onRequest((req, res) => {
+exports.buySnack = functions.region('asia-northeast1').https.onRequest((req, res) => {
   let payload = JSON.parse(req.body.payload)
   let user = payload.user
   let payment = parseInt(payload.actions[0].value)
@@ -82,7 +82,7 @@ exports.buySnack = functions.https.onRequest((req, res) => {
     })
 })
 
-exports.checkWallet = functions.https.onRequest((req, res) => {
+exports.checkWallet = functions.region('asia-northeast1').https.onRequest((req, res) => {
   let user_id = req.body.user_id
   let user_name = req.body.user_name
   let walletRef = db.collection('wallets').doc(user_id)
