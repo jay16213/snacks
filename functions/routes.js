@@ -149,6 +149,10 @@ router.post('/sell', (req, res) => {
     })
 })
 
+router.post('/message-event', (req, res) => {
+
+})
+
 let calculatePrice = (amount, totalPrice) => {
   let rawPrice = Math.round(totalPrice / amount)
   return Math.round(rawPrice / 5) * 5
