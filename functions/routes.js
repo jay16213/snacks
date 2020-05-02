@@ -121,7 +121,6 @@ router.post('/wallet', (req, res) => {
 
 router.post('/sell', (req, res) => {
   let user_id = req.body.user_id
-  let user_name = req.body.user_name
   let requestStr = req.body.text
 
   let walletRef = db.collection('wallets').doc(user_id)
@@ -151,35 +150,8 @@ router.post('/sell', (req, res) => {
 })
 
 let calculatePrice = (amount, totalPrice) => {
-  let price = totalPrice / amount
-  let carry = price % 10
-
-  // round
-  switch (carry) {
-    case 1:
-    case 2:
-      price -= carry
-      break
-    case 3:
-      price += 2
-      break
-    case 4:
-      price += 1
-      break
-    case 6:
-      price -= 1
-      break
-    case 7:
-      price -= 2
-      break
-    case 8:
-      price += 2
-      break
-    case 9:
-      price += 1
-      break
-  }
-  return price
+  let rawPrice = Math.round(totalPrice / amount)
+  return Math.round(rawPrice / 5) * 5
 }
 
 let newSnack = (walletRef, walletDoc, snackName, amount, totalPrice, res) => {
@@ -191,7 +163,7 @@ let newSnack = (walletRef, walletDoc, snackName, amount, totalPrice, res) => {
     price: price
   })
   .then(() => {
-    let snackInfo = `New Snack: ${snackName}, amount: ${amount}, price: $NT ${price} for each.`
+    let snackInfo = `New Snack: ${snackName}, amount: ${amount}, price: $NT ${price} for each`
     updateWallet(walletRef, walletDoc, totalPrice, snackInfo, res)
   }).catch(err => {
     console.error(err)
