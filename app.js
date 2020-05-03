@@ -14,6 +14,7 @@ mongoose.connect('mongodb://localhost:27017/snacks-store', { useUnifiedTopology:
 // express
 const port = normalizePort(process.env.PORT || '3000');
 const app = express()
+
 app.use('/', indexRouter)
 app.use('/slack/events', slackEvents.expressMiddleware())
 app.use('/slack/actions', slackInteractives.expressMiddleware())

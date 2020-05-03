@@ -1,5 +1,6 @@
 let sellModal = {
 	"type": "modal",
+	"callback_id": "sell-submit",
 	"title": {
 		"type": "plain_text",
 		"text": "Sell snack",
@@ -17,7 +18,6 @@ let sellModal = {
 	},
 	"blocks": [
 		{
-			"block_id": "12345",
 			"label": {
 				"type": "plain_text",
 				"text": "Snack Name"
@@ -39,7 +39,7 @@ let sellModal = {
 				"action_id": "snack_amount",
 				"placeholder": {
 					"type": "plain_text",
-					"text": "the number of item"
+					"text": "the number of snacks"
 				}
 			},
 			"label": {
@@ -57,9 +57,13 @@ let sellModal = {
 					"text": "total price"
 				}
 			},
+			"hint": {
+            	"type": "plain_text",
+                "text": "The bot will calculate the unit price automatically"
+            },
 			"label": {
 				"type": "plain_text",
-				"text": "Total price (The bot will calculate the unit price automatically)"
+				"text": "Total price"
 			}
 		}
 	]

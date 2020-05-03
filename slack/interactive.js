@@ -33,11 +33,16 @@ slackInteractives.action({type: 'button'}, (payload, res) => {
     case 'sell':
       console.log('sell action')
       console.log(action.text, action.value)
+      slackBot.showSellModal(trigger_id)
       break
     default:
       console.error(`Unknown action_id ${action.action_id}`)
       break
   }
+})
+
+slackInteractives.viewSubmission('sell-submit', (payload) => {
+  console.log('sell view subission')
 })
 
 let buySnacks = (user_id, channel_id, snackName, price) => {

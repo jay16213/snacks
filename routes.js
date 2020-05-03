@@ -1,7 +1,5 @@
 const express = require('express')
-const slackBot = require('./slack/bot')
 const router = express.Router()
-
 
 let calculatePrice = (amount, totalPrice) => {
   let rawPrice = Math.round(totalPrice / amount)

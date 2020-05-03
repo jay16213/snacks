@@ -97,6 +97,17 @@ const bot = {
     })
   },
 
+  showSellModal(trigger_id) {
+    web.views.open({
+      trigger_id: trigger_id,
+      view: sellModal
+    }).then((res) => {
+      console.log('open modal success, ', res, res.view.blocks)
+    }).catch(err => {
+      console.error(err)
+    })
+  },
+
   sendDirectMessage(channel, text) {
     web.chat.postMessage({
       channel: channel,
