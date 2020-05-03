@@ -10,6 +10,7 @@ const slackEvents = slackEventsApi.createEventAdapter(slackSigningSecret)
 const slackInteractives = slackInteractiveMessages.createMessageAdapter(slackSigningSecret)
 
 slackEvents.on('message', (event) => {
+    console.log('message event: ', event)
     // Filter out messages from this bot itself or updates to messages
     if (event.bot_id != null || event.type == 'message_changed') {
         return
@@ -19,8 +20,9 @@ slackEvents.on('message', (event) => {
     slackBot.handleDirectMessage(event)
 })
 
-slackInteractives.action('', (payload, res) => {
-
+slackInteractives.action('sell', (payload, res) => {
+    console.log(payload)
+    slackBot.showSellModal(payload.trigger_id)
 })
 
 module.exports = slackEvents

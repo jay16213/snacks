@@ -1,6 +1,7 @@
 const webApi = require('@slack/web-api')
 const User = require('../models/user')
 const Snack = require('../models/snack')
+const sellModal = require('./sell-modal')
 
 // An access token (from your Slack app or custom integration - xoxp, xoxb)
 const token = process.env.SLACK_TOKEN
@@ -15,30 +16,77 @@ const bot = {
         return
       }
 
-      let actions = []
+      let blocks = [{
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `Your wallet: $NT ${user.balance}`
+        }
+      }, {
+        type: 'divider',
+      }, {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: 'Want to buy snacks?'
+        }
+      }, {
+        type: 'actions',
+			  elements: []
+      }]
+
       snacks.forEach(snack => {
-        actions.push({
-          'name': 'snack',
-          'text': `${snack.name} ($NT ${snack.price})`,
-          'type': 'button',
-          'value': snack.price,
-          'confirm': {
-            'title': 'Are you sure?',
-            'text': `Are you want to buy a ${snack.name}?`,
-            'ok_text': 'Yes',
-            'dismiss_text': 'No'
+        blocks[3].elements.push({
+          type: 'button',
+          action_id: 'buy',
+          text: {
+            type: 'plain_text',
+            text: `${snack.name} ($NT ${snack.price})`,
+          },
+          value: `${snack.price}`,
+          confirm: {
+            title: {
+              type: 'plain_text',
+              text: 'Are you sure?',
+            },
+            text: {
+              type: 'mrkdwn',
+              text: `Do you want to buy a ${snack.name}?`
+            },
+            confirm: {
+              type: 'plain_text',
+              text: 'Yes'
+            },
+            deny: {
+              'type': 'plain_text',
+              'text': 'No'
+            }
           }
         })
       })
 
+      blocks.push({type: 'divider'})
+      blocks.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: 'Want to sell snacks?'
+        },
+        accessory: {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: 'Sell snack'
+          },
+          value: 'sell',
+          style: 'primary',
+          action_id: 'sell'
+        }
+      })
+
       web.chat.postMessage({
         channel: channel,
-        text: 'Do you want to buy snacks?',
-        attachments: [{
-          text: `Your wallet: $NT ${user.balance}`,
-          color: '#3AA3E3',
-          actions: actions
-        }]
+        blocks: blocks
       }).then(() => {
         console.log('show menu successfully')
       }).catch(err => {
@@ -61,7 +109,6 @@ const bot = {
   },
 
   handleDirectMessage(message) {
-    console.log(message)
     User.findOne({id: message.user}, (err, user) => {
       if (err) {
         console.error(err)
