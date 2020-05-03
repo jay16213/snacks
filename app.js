@@ -1,6 +1,7 @@
 const express = require('express')
 const indexRouter = require('./routes')
 const slackEvents = require('./slack/events')
+const slackInteractives = require('./slack/interactive')
 const normalizePort = require('normalize-port')
 
 // mongodb
@@ -15,6 +16,7 @@ const port = normalizePort(process.env.PORT || '3000');
 const app = express()
 app.use('/', indexRouter)
 app.use('/slack/events', slackEvents.expressMiddleware())
+app.use('/slack/actions', slackInteractives.expressMiddleware())
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
