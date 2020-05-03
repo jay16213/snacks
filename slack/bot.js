@@ -38,7 +38,7 @@ const bot = {
       snacks.forEach(snack => {
         blocks[3].elements.push({
           type: 'button',
-          action_id: 'buy',
+          action_id: `buy-${snack.name}`,
           text: {
             type: 'plain_text',
             text: `${snack.name} ($NT ${snack.price})`,

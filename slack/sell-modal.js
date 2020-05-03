@@ -18,14 +18,15 @@ let sellModal = {
 	},
 	"blocks": [
 		{
+			"block_id": "snack_name",
+			"type": "input",
 			"label": {
 				"type": "plain_text",
 				"text": "Snack Name"
 			},
-			"type": "input",
 			"element": {
 				"type": "plain_text_input",
-				"action_id": "snack_name",
+				"action_id": "input",
 				"placeholder": {
 					"type": "plain_text",
 					"text": "What do you want to sell?"
@@ -33,10 +34,11 @@ let sellModal = {
 			}
 		},
 		{
+			"block_id": "snack_amount",
 			"type": "input",
 			"element": {
 				"type": "plain_text_input",
-				"action_id": "snack_amount",
+				"action_id": "input",
 				"placeholder": {
 					"type": "plain_text",
 					"text": "the number of snacks"
@@ -48,10 +50,11 @@ let sellModal = {
 			}
 		},
 		{
+			"block_id": "snack_total_price",
 			"type": "input",
 			"element": {
 				"type": "plain_text_input",
-				"action_id": "snack_total_price",
+				"action_id": "input",
 				"placeholder": {
 					"type": "plain_text",
 					"text": "total price"

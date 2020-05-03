@@ -20,29 +20,42 @@ slackInteractives.action({type: 'button'}, (payload, res) => {
   let channel_id = payload.container.channel_id
   let action = payload.actions[0]
 
-  switch (action.action_id) {
-    case 'buy':
-      console.log('buy action')
-      console.log(action.text, action.value)
-
-      snackName = String(action.text.text).split(' ')[0]
-      price = parseInt(action.value)
-
-      buySnacks(user.id, channel_id, snackName, price)
-      break
-    case 'sell':
-      console.log('sell action')
-      console.log(action.text, action.value)
-      slackBot.showSellModal(trigger_id)
-      break
-    default:
-      console.error(`Unknown action_id ${action.action_id}`)
-      break
+  if (action.action_id.startsWith('buy')) {
+    console.log('buy action')
+    console.log(action.text, action.value)
+    snackName = String(action.text.text).split(' ')[0]
+    price = parseInt(action.value)
+    buySnacks(user.id, channel_id, snackName, price)
+  } else if (action.action_id.startsWith('sell')) {
+    console.log('sell action')
+    console.log(action.text, action.value)
+    slackBot.showSellModal(trigger_id)
+  } else {
+    console.error(`Unknown action_id ${action.action_id}`)
   }
 })
 
 slackInteractives.viewSubmission('sell-submit', (payload) => {
-  console.log('sell view subission')
+  console.log('sell view subission', payload)
+  let viewValues = payload.view.state.values
+
+  let snackName = viewValues.snack_name.input.value
+  let amount = parseInt(viewValues.snack_amount.input.value)
+  let totalPrice = parseInt(viewValues.snack_total_price.input.value)
+  console.log(viewValues)
+  console.log(snackName, amount, totalPrice)
+  Snack.exists({name: viewValues.snack_name.value}, (err, exists) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+
+    if (exists) {
+      slackBot.sendDirectMessage(payload.user.id, `${viewValues.snack_name} has existed at store, you can't not sell the same thing until it sold out.`)
+    } else {
+      sellSnacks(payload.user, snackName, amount, totalPrice)
+    }
+  })
 })
 
 let buySnacks = (user_id, channel_id, snackName, price) => {
@@ -83,6 +96,44 @@ let buySnacks = (user_id, channel_id, snackName, price) => {
       }
     })
   })
+}
+
+let sellSnacks = (slackUser, snackName, amount, totalPrice) => {
+  User.findOne({id: slackUser.id}, (err, user) => {
+    if (err) {
+      console.error(err)
+      return
+    }
+
+    let newSnack = new Snack()
+    newSnack.name = snackName
+    newSnack.amount = amount
+    newSnack.price = calculatePrice(amount, totalPrice)
+    newSnack.save().then(() => {
+      slackBot.sendDirectMessage(user.id, `You sell new snack ${snackName}, $NT ${newSnack.price} for each.`)
+      updateUserBalance(user, totalPrice)
+    }).catch(err => {
+      console.error(err)
+      slackBot.sendDirectMessage(user.id, `save snack to db error: ${err}`)
+      return
+    })
+  })
+
+}
+
+let updateUserBalance = (user, money) => {
+  user.balance += money
+  user.save().then(() => {
+    slackBot.sendDirectMessage(user.id, `Return $NT ${money} to you. You wallet has $NT ${user.balance} now.`)
+  }).catch(err => {
+    console.error(err)
+    slackBot.sendDirectMessage(user.id, `save new balance to db error: ${err}`)
+  })
+}
+
+let calculatePrice = (amount, totalPrice) => {
+  let rawPrice = Math.round(totalPrice / amount)
+  return Math.round(rawPrice / 5) * 5
 }
 
 module.exports = slackInteractives
