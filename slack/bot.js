@@ -1,4 +1,5 @@
 const webApi = require('@slack/web-api')
+const User = require('../models/user')
 const Snack = require('../models/snack')
 
 // An access token (from your Slack app or custom integration - xoxp, xoxb)
@@ -6,7 +7,7 @@ const token = process.env.SLACK_TOKEN
 const web = new webApi.WebClient(token)
 
 const bot = {
-  showSnackMenu(channel) {
+  showSnackMenu(channel, user) {
     Snack.find({}, (err, snacks) => {
       if (err) {
         console.error(err)
@@ -34,7 +35,7 @@ const bot = {
         channel: channel,
         text: 'Do you want to buy snacks?',
         attachments: [{
-          text: 'Choose a snack',
+          text: `Your wallet: $NT ${user.balance}`,
           color: '#3AA3E3',
           actions: actions
         }]
@@ -43,6 +44,8 @@ const bot = {
       }).catch(err => {
         console.error(err)
       })
+    }).catch(err => {
+      console.error(err)
     })
   },
 
@@ -58,7 +61,31 @@ const bot = {
   },
 
   handleDirectMessage(message) {
-    this.showSnackMenu(message.channel)
+    console.log(message)
+    User.findOne({id: message.user}, (err, user) => {
+      if (err) {
+        console.error(err)
+        this.sendDirectMessage(channel, `Server error when get snacks list`)
+        return
+      }
+
+      if (user == null) {
+        let newUser = new User()
+        newUser.id = message.user
+        newUser.balance = 0
+
+        newUser.save(err => {
+          if (err) {
+            console.error(err)
+            return
+          }
+          this.sendDirectMessage(message.channel, 'This is your first time to use Snack bot. I create a wallet with $NT 0 for you.')
+          this.showSnackMenu(message.channel, newUser)
+        })
+      } else {
+        this.showSnackMenu(message.channel, user)
+      }
+    })
   }
 }
 

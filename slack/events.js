@@ -1,4 +1,5 @@
 const slackEventsApi = require('@slack/events-api')
+const slackInteractiveMessages = require('@slack/interactive-messages');
 const slackBot = require('./bot')
 
 // Read the signing secret from the environment variables
@@ -6,6 +7,7 @@ const slackSigningSecret = process.env.SLACK_SIGNING_SECRET
 
 // init slack tools
 const slackEvents = slackEventsApi.createEventAdapter(slackSigningSecret)
+const slackInteractives = slackInteractiveMessages.createMessageAdapter(slackSigningSecret)
 
 slackEvents.on('message', (event) => {
     // Filter out messages from this bot itself or updates to messages
@@ -15,6 +17,10 @@ slackEvents.on('message', (event) => {
 
     console.log(`Received a message event: user ${event.user} in channel ${event.channel} says ${event.text}`)
     slackBot.handleDirectMessage(event)
+})
+
+slackInteractives.action('', (payload, res) => {
+
 })
 
 module.exports = slackEvents
