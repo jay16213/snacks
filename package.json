@@ -1,0 +1,31 @@
+{
+  "name": "snacks",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "dependencies": {
+    "@slack/events-api": "^2.3.2",
+    "@slack/interactive-messages": "^1.6.0",
+    "@slack/web-api": "^5.8.1",
+    "express": "^4.17.1",
+    "install": "^0.13.0",
+    "mongoose": "^5.9.11",
+    "normalize-port": "^1.0.0",
+    "npm": "^6.14.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jay16213/snacks.git"
+  },
+  "author": "Jay Lin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jay16213/snacks/issues"
+  },
+  "homepage": "https://github.com/jay16213/snacks#readme"
+}
