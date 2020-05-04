@@ -24,23 +24,23 @@ slackEvents.on('app_home_opened', async (event) => {
   console.log('app home open event', event)
 
   try {
-    let slackUser = await User.findOne({slackId: event.user})
+    let user = await User.findOne({slackId: event.user})
 
     // the user use this app first time
-    if (slackUser == null) {
+    if (user == null) {
       let newUser = new User()
       newUser.slackId = event.user
       newUser.admin = false
       newUser.balance = 0
 
       try {
-        let userInfo = await slackBot.webClient.users.info({user: event.user})
-        console.debug(userInfo)
+        let slackUserInfo = await slackBot.webClient.users.info({user: event.user})
+        console.debug(slackUserInfo)
 
-        newUser.name = userInfo.user.profile.display_name
-        newUser.save().then(() => {
-
-          slackBot.sendDirectMessage(event.channel, 'Welcome to Snack store! I create a wallet with *$NT 0* for you')
+        newUser.name = slackUserInfo.user.profile.display_name
+        newUser.save().then(async () => {
+          await slackBot.sendDirectMessage(event.channel, 'Welcome to Snack store! I create a wallet with *$NT 0* for you')
+          await slackBot.showHomePage(newUser)
         }).catch(err => {
           console.error(err)
         })
@@ -48,6 +48,8 @@ slackEvents.on('app_home_opened', async (event) => {
       catch (err) {
         console.error(err)
       }
+    } else {
+      await slackBot.showHomePage(user)
     }
   }
   catch (err) {
