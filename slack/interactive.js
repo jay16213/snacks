@@ -68,22 +68,23 @@ let buySnacks = async (slackUser, snackName, price) => {
     snack.amount--
 
     if (snack.amount == 0) {
-      await Snack.deleteOne(snack)
+      await Snack.deleteOne({name: snack.name})
       console.log(`${snack.name} has sold out, delet from db.`)
     } else {
       // save amount
       await snack.save()
-      console.log(`Sold one ${snack.name} to ${user.name}, left amount: ${snack.amount}`)
-
-      // user pay for snack
-      user.balance -= snack.price
-      await user.save()
-
-      let timestamp = moment().format('LLL')
-      let msg = `You pay *$NT ${price}* for one *${snackName}* at ${timestamp}.\nYour wallet has *$NT ${user.balance}* now.`
-      await slackBot.sendDirectMessage(slackUser.id, msg)
-      await slackBot.showHomePage(user)
     }
+
+    console.log(`Sold one ${snack.name} to ${user.name}, left amount: ${snack.amount}`)
+
+    // user pay for snack
+    user.balance -= snack.price
+    await user.save()
+
+    let timestamp = moment().format('LLL')
+    let msg = `You pay *$NT ${price}* for one *${snackName}* at ${timestamp}.\nYour wallet has *$NT ${user.balance}* now.`
+    await slackBot.sendDirectMessage(slackUser.id, msg)
+    await slackBot.showHomePage(user)
   }
   catch (err) {
     console.error(err)
