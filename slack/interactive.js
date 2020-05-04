@@ -32,41 +32,38 @@ slackInteractives.action({actionId: RegExp('buy:.*')}, async (payload, res) => {
 
 slackInteractives.action({actionId: 'sell'}, async (payload, res) => {
   console.log('sell action', payload)
-  slackBot.showSellModal(trigger_id)
+  await slackBot.showSellModal(payload.trigger_id)
 })
 
-slackInteractives.viewSubmission('sell-submit', (payload) => {
+slackInteractives.viewSubmission('sell:submit', async (payload) => {
   console.log('sell view subission', payload)
   let viewValues = payload.view.state.values
 
   let snackName = viewValues.snack_name.input.value
   let amount = parseInt(viewValues.snack_amount.input.value)
   let totalPrice = parseInt(viewValues.snack_total_price.input.value)
-  console.log(viewValues)
-  console.log(snackName, amount, totalPrice)
-  Snack.exists({name: snackName}, (err, exists) => {
-    if (err) {
-      console.error(err)
-      return
-    }
 
-    if (exists) {
-      slackBot.sendDirectMessage(payload.user.id, `${snackName} has existed at store, you can't not sell the same thing until it sold out.`)
-    } else {
-      sellSnacks(payload.user, snackName, amount, totalPrice)
-    }
-  })
+  if (isNaN(amount) || isNaN(totalPrice)) {
+    slackBot.sendDirectMessage(payload.user.id, 'amount and totalPrice must be number')
+    return
+  }
+
+  await sellSnacks(payload.user, snackName, amount, totalPrice)
 })
 
 let buySnacks = async (slackUser, snackName, price) => {
-  let newBalance = 0
-
-  const session = await mongoose.startSession()
   try {
     let user = await User.findOne({slackId: slackUser.id})
     let snack = await Snack.findOne({name: snackName})
 
-    session.startTransaction()
+    if (user == null) {
+      throw new Error(`user not found with slackId ${slackUser.id}`)
+    }
+
+    if (snack == null) {
+      throw new Error(`snack not found with name ${snackName}`)
+    }
+
     // sell one snack to user
     snack.amount--
 
@@ -80,60 +77,57 @@ let buySnacks = async (slackUser, snackName, price) => {
 
       // user pay for snack
       user.balance -= snack.price
-      newBalance = user.balance
       await user.save()
 
-      // commit the changes if everything was successful
-      await session.commitTransaction()
+      let timestamp = moment().format('LLL')
+      let msg = `You pay *$NT ${price}* for one *${snackName}* at ${timestamp}.\nYour wallet has *$NT ${user.balance}* now.`
+      await slackBot.sendDirectMessage(slackUser.id, msg)
     }
   }
   catch (err) {
-    // rollback any changes made in the database if error happened
-    await session.abortTransaction()
     console.error(err)
+    await slackBot.sendDirectMessage(slackUser.id, `Server error when buying ${snackName}.`)
+  }
+}
 
-    slackBot.sendDirectMessage(slackUser.id, `Server error when buying ${snackName}.`)
+let sellSnacks = async (slackUser, snackName, amount, totalPrice) => {
+  try {
+    let snackExists = await Snack.exists({name: snackName})
+    if (snackExists) {
+      await slackBot.sendDirectMessage(slackUser.id, `${snackName} has existed at store, you can't not sell the same thing until it sold out.`)
+    }
+  }
+  catch (err) {
+    console.error(err)
+    await slackBot.sendDirectMessage(slackUser.id, `Server error when checking the snack exists or not`)
+    return
   }
   finally {
-    session.endSession()
+    let price = calculatePrice(amount, totalPrice)
+    let newBalance = 0
 
-    let timestamp = moment().format('LLL')
-    let msg = `You pay *$NT ${price}* for one ${snackName} at ${timestamp}.\nYour wallet has *$NT ${newBalance}* now`
-    slackBot.sendDirectMessage(slackUser.id, msg)
-  }
-}
+    try {
+      let user = await User.findOne({slackId: slackUser.id})
+      if (user == null) {
+        throw new Error(`user not found with slackId ${slackUser.id}`)
+      }
 
-let sellSnacks = (slackUser, snackName, amount, totalPrice) => {
-  User.findOne({id: slackUser.id}, (err, user) => {
-    if (err) {
-      console.error(err)
-      return
+      // sell new snack on the store
+      await Snack.create([{name: snackName, amount: amount, price: price}])
+
+      // return money to user's wallet
+      user.balance += totalPrice
+      newBalance = user.balance
+      await user.save()
+
+      let msg = `Sell *${snackName}* successfully, price: *$NT ${price}* for each.\nReturn *${totalPrice}* to your wallet, your wallet has ${newBalance} now.`
+      await slackBot.sendDirectMessage(slackUser.id, msg)
     }
-
-    let newSnack = new Snack()
-    newSnack.name = snackName
-    newSnack.amount = amount
-    newSnack.price = calculatePrice(amount, totalPrice)
-    newSnack.save().then(() => {
-      slackBot.sendDirectMessage(user.id, `You sell new snack ${snackName}, $NT ${newSnack.price} for each.`)
-      updateUserBalance(user, totalPrice)
-    }).catch(err => {
+    catch (err) {
       console.error(err)
-      slackBot.sendDirectMessage(user.id, `save snack to db error: ${err}`)
-      return
-    })
-  })
-
-}
-
-let updateUserBalance = (user, money) => {
-  user.balance += money
-  user.save().then(() => {
-    slackBot.sendDirectMessage(user.id, `Return $NT ${money} to you. You wallet has $NT ${user.balance} now.`)
-  }).catch(err => {
-    console.error(err)
-    slackBot.sendDirectMessage(user.id, `save new balance to db error: ${err}`)
-  })
+      await slackBot.sendDirectMessage(slackUser.id, `Server error when selling snack. Please try again later.`)
+    }
+  }
 }
 
 let calculatePrice = (amount, totalPrice) => {

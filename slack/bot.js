@@ -2,7 +2,7 @@ const webApi = require('@slack/web-api')
 const moment = require('moment')
 const User = require('../models/user')
 const Snack = require('../models/snack')
-const sellModal = require('./sell-modal')
+const sellModal = require('./views/sellModal')
 
 // An access token (from your Slack app or custom integration - xoxp, xoxb)
 const token = process.env.SLACK_TOKEN
@@ -11,15 +11,16 @@ let webClient = new webApi.WebClient(token)
 module.exports = {
   webClient: webClient,
 
-  showSellModal: (trigger_id) => {
-    web.views.open({
-      trigger_id: trigger_id,
-      view: sellModal
-    }).then((res) => {
-      console.log('open modal success, ', res, res.view.blocks)
-    }).catch(err => {
+  showSellModal: async (trigger_id) => {
+    try {
+      await webClient.views.open({
+        trigger_id: trigger_id,
+        view: sellModal
+      })
+    }
+    catch (err) {
       console.error(err)
-    })
+    }
   },
 
   sendDirectMessage: async (channel, text) => {
@@ -93,6 +94,7 @@ module.exports = {
     }
 
     try {
+      console.log('view payload', viewPayload)
       await webClient.views.publish({user_id: user.slackId, view: viewPayload})
     }
     catch (err) {

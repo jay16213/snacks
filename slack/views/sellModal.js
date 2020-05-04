@@ -1,6 +1,6 @@
 let sellModal = {
 	"type": "modal",
-	"callback_id": "sell-submit",
+	"callback_id": "sell:submit",
 	"title": {
 		"type": "plain_text",
 		"text": "Sell snack",
