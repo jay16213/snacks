@@ -44,14 +44,14 @@ slackInteractives.viewSubmission('sell-submit', (payload) => {
   let totalPrice = parseInt(viewValues.snack_total_price.input.value)
   console.log(viewValues)
   console.log(snackName, amount, totalPrice)
-  Snack.exists({name: viewValues.snack_name.value}, (err, exists) => {
+  Snack.exists({name: snackName}, (err, exists) => {
     if (err) {
       console.error(err)
       return
     }
 
     if (exists) {
-      slackBot.sendDirectMessage(payload.user.id, `${viewValues.snack_name} has existed at store, you can't not sell the same thing until it sold out.`)
+      slackBot.sendDirectMessage(payload.user.id, `${snackName} has existed at store, you can't not sell the same thing until it sold out.`)
     } else {
       sellSnacks(payload.user, snackName, amount, totalPrice)
     }
