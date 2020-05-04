@@ -1,4 +1,5 @@
 const slackInteractiveMessages = require('@slack/interactive-messages')
+const mongoose = require('mongoose');
 const moment = require('moment')
 const Snack = require('../models/snack')
 const User = require('../models/user')
@@ -11,32 +12,27 @@ const slackSigningSecret = process.env.SLACK_SIGNING_SECRET
 const slackInteractives = slackInteractiveMessages.createMessageAdapter(slackSigningSecret)
 
 // handle a buy action
-slackInteractives.action({actionId: RegExp('buy:.*')}, (payload, res) => {
-  console.log('receive buy action')
-  console.log(payload)
+slackInteractives.action({actionId: RegExp('buy:.*')}, async (payload, res) => {
+  console.debug('buy action', payload)
 
-  let user = payload.user
-  let trigger_id = payload.trigger_id
-  let channel_id = payload.container.channel_id
+  let slackUser = payload.user
   let action = payload.actions[0]
 
-  if (action.action_id.startsWith('buy')) {
-    console.log('buy action')
-    console.log(action.text, action.value)
-    snackName = String(action.text.text).split(' ')[0]
-    price = parseInt(action.value)
-    buySnacks(user.id, channel_id, snackName, price)
-  } else if (action.action_id.startsWith('sell')) {
-    console.log('sell action')
-    console.log(action.text, action.value)
-    slackBot.showSellModal(trigger_id)
-  } else {
-    console.error(`Unknown action_id ${action.action_id}`)
+  let substr = action.value.split(':')
+  snackName = substr[0]
+  price = parseInt(substr[1])
+
+  try {
+    await buySnacks(slackUser, snackName, price)
+  }
+  catch (err) {
+    console.error(err)
   }
 })
 
 slackInteractives.action({actionId: 'sell'}, async (payload, res) => {
   console.log('sell action', payload)
+  slackBot.showSellModal(trigger_id)
 })
 
 slackInteractives.viewSubmission('sell-submit', (payload) => {
@@ -62,44 +58,49 @@ slackInteractives.viewSubmission('sell-submit', (payload) => {
   })
 })
 
-let buySnacks = (user_id, channel_id, snackName, price) => {
-  Snack.findOne({name: snackName}, (err, snack) => {
-    if (err) {
-      console.error(err)
-      slackBot.sendDirectMessage(channel_id, `Can't not buy ${snackName}`)
-      return
+let buySnacks = async (slackUser, snackName, price) => {
+  let newBalance = 0
+
+  const session = await mongoose.startSession()
+  try {
+    let user = await User.findOne({slackId: slackUser.id})
+    let snack = await Snack.findOne({name: snackName})
+
+    session.startTransaction()
+    // sell one snack to user
+    snack.amount--
+
+    if (snack.amount == 0) {
+      await Snack.deleteOne(snack)
+      console.log(`${snack.name} has sold out, delet from db.`)
+    } else {
+      // save amount
+      await snack.save()
+      console.log(`Sold one ${snack.name} to ${user.name}, left amount: ${snack.amount}`)
+
+      // user pay for snack
+      user.balance -= snack.price
+      newBalance = user.balance
+      await user.save()
+
+      // commit the changes if everything was successful
+      await session.commitTransaction()
     }
+  }
+  catch (err) {
+    // rollback any changes made in the database if error happened
+    await session.abortTransaction()
+    console.error(err)
 
-    User.findOne({id: user_id}, (err, user) => {
-      if (err) {
-        console.error(`Can't not find user with id ${user_id}`)
-        return
-      }
+    slackBot.sendDirectMessage(slackUser.id, `Server error when buying ${snackName}.`)
+  }
+  finally {
+    session.endSession()
 
-      snack.amount--
-      if (snack.amount == 0) {
-        Snack.delete(snack).then(() => {
-          console.log(`${snack.name} has sold out, delet from db.`)
-        }).catch(err => {
-          console.error(err)
-        })
-      } else {
-        snack.save().then(() => {
-          console.log(`${snack.name} amount: ${snack.amount}`)
-          user.balance -= snack.price
-          user.save().then(() => {
-            let timestamp = moment().format('LLL')
-            let msg = `You buy a ${snack.name} at ${timestamp}. Your wallet has $NT ${user.balance} now`
-            slackBot.sendDirectMessage(channel_id, msg)
-          }).catch(err => {
-            console.error(err)
-          })
-        }).catch(err => {
-          console.error(err)
-        })
-      }
-    })
-  })
+    let timestamp = moment().format('LLL')
+    let msg = `You pay *$NT ${price}* for one ${snackName} at ${timestamp}.\nYour wallet has *$NT ${newBalance}* now`
+    slackBot.sendDirectMessage(slackUser.id, msg)
+  }
 }
 
 let sellSnacks = (slackUser, snackName, amount, totalPrice) => {
