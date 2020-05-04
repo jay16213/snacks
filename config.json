@@ -1,0 +1,5 @@
+{
+    "dbUrl": "url",
+    "slackSigningSecret": "secret",
+    "slackToken": "token"
+}

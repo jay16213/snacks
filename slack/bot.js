@@ -3,10 +3,10 @@ const moment = require('moment')
 const User = require('../models/user')
 const Snack = require('../models/snack')
 const sellModal = require('./views/sellModal')
+const config  = require('../config.json')
 
 // An access token (from your Slack app or custom integration - xoxp, xoxb)
-const token = process.env.SLACK_TOKEN
-let webClient = new webApi.WebClient(token)
+let webClient = new webApi.WebClient(config.slackToken)
 
 module.exports = {
   webClient: webClient,

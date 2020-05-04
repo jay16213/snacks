@@ -1,12 +1,10 @@
 const slackEventsApi = require('@slack/events-api')
 const slackBot = require('./bot')
 const User = require('../models/user')
-
-// Read the signing secret from the environment variables
-const slackSigningSecret = process.env.SLACK_SIGNING_SECRET
+const config  = require('../config.json')
 
 // init slack tools
-const slackEvents = slackEventsApi.createEventAdapter(slackSigningSecret)
+const slackEvents = slackEventsApi.createEventAdapter(config.slackSigningSecret)
 
 // https://api.slack.com/events/app_home_opened
 slackEvents.on('app_home_opened', async (event) => {

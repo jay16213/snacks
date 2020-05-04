@@ -4,12 +4,10 @@ const moment = require('moment')
 const Snack = require('../models/snack')
 const User = require('../models/user')
 const slackBot = require('./bot')
-
-// Read the signing secret from the environment variables
-const slackSigningSecret = process.env.SLACK_SIGNING_SECRET
+const config  = require('../config.json')
 
 // init slack tools
-const slackInteractives = slackInteractiveMessages.createMessageAdapter(slackSigningSecret)
+const slackInteractives = slackInteractiveMessages.createMessageAdapter(config.slackSigningSecret)
 
 // handle a buy action
 slackInteractives.action({actionId: RegExp('buy:.*')}, async (payload, res) => {

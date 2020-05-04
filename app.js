@@ -2,13 +2,13 @@ const express = require('express')
 const slackEvents = require('./slack/events')
 const slackInteractives = require('./slack/interactive')
 const normalizePort = require('normalize-port')
-
+const config = require('./config.json')
 // mongodb
 const mongoose = require('mongoose')
 
 // database setup
 mongoose.Promise = global.Promise
-mongoose.connect('mongodb://localhost:27017/snacks-store', { useUnifiedTopology: true, useNewUrlParser: true })
+mongoose.connect(config.dbUrl, { useUnifiedTopology: true, useNewUrlParser: true })
 
 // express
 const port = normalizePort(process.env.PORT || '3000');
