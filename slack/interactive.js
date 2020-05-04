@@ -82,6 +82,7 @@ let buySnacks = async (slackUser, snackName, price) => {
       let timestamp = moment().format('LLL')
       let msg = `You pay *$NT ${price}* for one *${snackName}* at ${timestamp}.\nYour wallet has *$NT ${user.balance}* now.`
       await slackBot.sendDirectMessage(slackUser.id, msg)
+      await slackBot.showHomePage(user)
     }
   }
   catch (err) {
@@ -122,6 +123,7 @@ let sellSnacks = async (slackUser, snackName, amount, totalPrice) => {
 
       let msg = `Sell *${snackName}* successfully, price: *$NT ${price}* for each.\nReturn *${totalPrice}* to your wallet, your wallet has ${newBalance} now.`
       await slackBot.sendDirectMessage(slackUser.id, msg)
+      await slackBot.showHomePage(user)
     }
     catch (err) {
       console.error(err)
