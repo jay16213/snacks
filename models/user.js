@@ -1,8 +1,9 @@
 const mongoose = require('mongoose')
 
 let userSchema = mongoose.Schema({
-  id: { type: String, required: true },
+  slackId: { type: String, required: true },
   name: { type: String },
+  admin: { type: Boolean, required: true, default: false },
   balance: { type: Number, required: true }
 })
 

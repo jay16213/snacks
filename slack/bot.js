@@ -5,10 +5,11 @@ const sellModal = require('./sell-modal')
 
 // An access token (from your Slack app or custom integration - xoxp, xoxb)
 const token = process.env.SLACK_TOKEN
-const web = new webApi.WebClient(token)
+let webClient = new webApi.WebClient(token)
 
-const bot = {
-  showSnackMenu(channel, user) {
+module.exports = {
+  webClient: webClient,
+  showSnackMenu: (channel, user) => {
     Snack.find({}, (err, snacks) => {
       if (err) {
         console.error(err)
@@ -32,7 +33,7 @@ const bot = {
         }
       }, {
         type: 'actions',
-			  elements: []
+        elements: []
       }]
 
       snacks.forEach(snack => {
@@ -97,7 +98,7 @@ const bot = {
     })
   },
 
-  showSellModal(trigger_id) {
+  showSellModal: (trigger_id) => {
     web.views.open({
       trigger_id: trigger_id,
       view: sellModal
@@ -108,18 +109,17 @@ const bot = {
     })
   },
 
-  sendDirectMessage(channel, text) {
-    web.chat.postMessage({
-      channel: channel,
-      text: text,
-    }).then(() => {
+  sendDirectMessage: async (channel, text) => {
+    try {
+      await webClient.chat.postMessage({channel: channel, text: text})
       console.log(`write message to channel ${channel} successfully.`)
-    }).catch(err => {
+    }
+    catch (err) {
       console.error(err)
-    })
+    }
   },
 
-  handleDirectMessage(message) {
+  handleDirectMessage: (message) => {
     User.findOne({id: message.user}, (err, user) => {
       if (err) {
         console.error(err)
@@ -146,5 +146,3 @@ const bot = {
     })
   }
 }
-
-module.exports = bot
