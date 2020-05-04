@@ -136,37 +136,39 @@ module.exports = {
             text: 'There are no snack are sold now.'
           }
         }
-      }
-      snacks.forEach(snack => {
-        viewPayload.blocks[4].elements.push({
-          type: 'button',
-          action_id: `buy:${snack.name}`,
-          text: {
-            type: 'plain_text',
-						text: `${snack.name} ($NT ${snack.price})`,
-						emoji: true
-          },
-          value: `${snack.price}`,
-          confirm: {
-            title: {
-              type: 'plain_text',
-              text: 'Are you sure?',
-            },
+      } else {
+        viewPayload.blocks[4].elements = [] // clear the array
+        snacks.forEach(snack => {
+          viewPayload.blocks[4].elements.push({
+            type: 'button',
+            action_id: `buy:${snack.name}`,
             text: {
-              type: 'mrkdwn',
-              text: `Do you want to buy a ${snack.name}?`
-            },
-            confirm: {
               type: 'plain_text',
-              text: 'Yes'
+              text: `${snack.name} | $NT ${snack.price}`,
+              emoji: true
             },
-            deny: {
-              'type': 'plain_text',
-              'text': 'No'
+            value: `${snack.price}`,
+            confirm: {
+              title: {
+                type: 'plain_text',
+                text: 'Are you sure?',
+              },
+              text: {
+                type: 'mrkdwn',
+                text: `Do you want to buy a ${snack.name}?`
+              },
+              confirm: {
+                type: 'plain_text',
+                text: 'Yes'
+              },
+              deny: {
+                'type': 'plain_text',
+                'text': 'No'
+              }
             }
-          }
+          })
         })
-      })
+      }
     } catch (err) {
       console.error(err)
       viewPayload.blocks[4] = {

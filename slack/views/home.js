@@ -43,6 +43,7 @@ let home = {
       },
       accessory: {
         type: 'button',
+        action_id: 'sell',
         text: {
           type: 'plain_text',
           text: 'Sell snacks',

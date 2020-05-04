@@ -10,9 +10,9 @@ const slackSigningSecret = process.env.SLACK_SIGNING_SECRET
 // init slack tools
 const slackInteractives = slackInteractiveMessages.createMessageAdapter(slackSigningSecret)
 
-// handle a button interactive message
-slackInteractives.action({type: 'button'}, (payload, res) => {
-  console.log('receive button action')
+// handle a buy action
+slackInteractives.action({actionId: RegExp('buy:.*')}, (payload, res) => {
+  console.log('receive buy action')
   console.log(payload)
 
   let user = payload.user
@@ -33,6 +33,10 @@ slackInteractives.action({type: 'button'}, (payload, res) => {
   } else {
     console.error(`Unknown action_id ${action.action_id}`)
   }
+})
+
+slackInteractives.action({actionId: 'sell'}, async (payload, res) => {
+  console.log('sell action', payload)
 })
 
 slackInteractives.viewSubmission('sell-submit', (payload) => {
