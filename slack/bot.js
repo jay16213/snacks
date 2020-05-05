@@ -3,6 +3,7 @@ const moment = require('moment')
 const User = require('../models/user')
 const Snack = require('../models/snack')
 const sellModal = require('./views/sellModal')
+const payModal = require('./views/payModal')
 const config  = require('../config.json')
 
 // An access token (from your Slack app or custom integration - xoxp, xoxb)
@@ -16,6 +17,18 @@ module.exports = {
       await webClient.views.open({
         trigger_id: trigger_id,
         view: sellModal
+      })
+    }
+    catch (err) {
+      console.error(err)
+    }
+  },
+
+  showPayModal: async (trigger_id) => {
+    try {
+      await webClient.views.open({
+        trigger_id: trigger_id,
+        view: payModal
       })
     }
     catch (err) {
@@ -37,7 +50,7 @@ module.exports = {
     let viewPayload = require('./views/home')
 
     // show user's wallet and timestamp
-    viewPayload.blocks[0].text.text = `You wallet has *$NT ${user.balance}*`
+    viewPayload.blocks[0].text.text = `:moneybag: Your wallet has *NT$ ${user.balance}*`
     viewPayload.blocks[1].elements[0].text = `_last updated: ${moment().format('LLL')}_`
     try {
       let snacks = await Snack.find()
@@ -57,7 +70,7 @@ module.exports = {
             action_id: `buy:${snack.name}`,
             text: {
               type: 'plain_text',
-              text: `${snack.name} | $NT ${snack.price}`,
+              text: `${snack.name} | NT$ ${snack.price}`,
               emoji: true
             },
             value: `${snack.name}:${snack.price}`,

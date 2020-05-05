@@ -1,5 +1,4 @@
 const slackInteractiveMessages = require('@slack/interactive-messages')
-const mongoose = require('mongoose');
 const moment = require('moment')
 const Snack = require('../models/snack')
 const User = require('../models/user')
@@ -33,6 +32,29 @@ slackInteractives.action({actionId: 'sell'}, async (payload, res) => {
   await slackBot.showSellModal(payload.trigger_id)
 })
 
+slackInteractives.action({actionId: 'pay:request'}, async (payload, res) => {
+  console.log('pay request action', payload)
+  await slackBot.showPayModal(payload.trigger_id)
+})
+
+slackInteractives.action({actionId: 'pay:confirm'}, async (payload, res) => {
+  console.log('pay confirm action', payload)
+
+  let substr = payload.actions[0].value.split(':')
+  let slackUserId = substr[0]
+  let payment = parseInt(substr[1])
+
+  let user = await User.findOne({slackId: slackUserId})
+
+  if (user == null) {
+    await slackBot.sendDirectMessage(payload.user.id, 'user not found')
+  } else {
+    user.balance += payment
+    await user.save()
+    await slackBot.sendDirectMessage(user.slackId, `Admin has verified your payment. Your wallet has ${user.balance} now.`)
+  }
+})
+
 slackInteractives.viewSubmission('sell:submit', async (payload) => {
   console.log('sell view subission', payload)
   let viewValues = payload.view.state.values
@@ -47,6 +69,30 @@ slackInteractives.viewSubmission('sell:submit', async (payload) => {
   }
 
   await sellSnacks(payload.user, snackName, amount, totalPrice)
+})
+
+slackInteractives.viewSubmission('pay:submit', async (payload, res) => {
+  console.log('pay view subission', payload)
+
+  let viewValues = payload.view.state.values
+  let moneyToPay = parseInt(viewValues.money.input.value)
+
+  if (isNaN(moneyToPay) || moneyToPay <= 0) {
+    console.log('invalid money input')
+
+    payload.blocks.push({
+      type: 'context',
+      elements: [
+        {
+          type: 'mrkdwn',
+          text: 'input must be a positive number'
+        }
+      ]
+    })
+    console.log(payload.view.id, payload)
+    await slackBot.sendDirectMessage(payload.user.id, 'Pay money: input must be a positive number')
+  }
+  await payMoney(payload.user, moneyToPay)
 })
 
 let buySnacks = async (slackUser, snackName, price) => {
@@ -96,38 +142,56 @@ let sellSnacks = async (slackUser, snackName, amount, totalPrice) => {
     if (snackExists) {
       await slackBot.sendDirectMessage(slackUser.id, `${snackName} has existed at store, you can't not sell the same thing until it sold out.`)
     }
-  }
-  catch (err) {
-    console.error(err)
-    await slackBot.sendDirectMessage(slackUser.id, `Server error when checking the snack exists or not`)
-    return
-  }
-  finally {
+
     let price = calculatePrice(amount, totalPrice)
     let newBalance = 0
 
-    try {
-      let user = await User.findOne({slackId: slackUser.id})
-      if (user == null) {
-        throw new Error(`user not found with slackId ${slackUser.id}`)
-      }
-
-      // sell new snack on the store
-      await Snack.create([{name: snackName, amount: amount, price: price}])
-
-      // return money to user's wallet
-      user.balance += totalPrice
-      newBalance = user.balance
-      await user.save()
-
-      let msg = `Sell *${snackName}* successfully, price: *$NT ${price}* for each.\nReturn *${totalPrice}* to your wallet, your wallet has ${newBalance} now.`
-      await slackBot.sendDirectMessage(slackUser.id, msg)
-      await slackBot.showHomePage(user)
+    let user = await User.findOne({slackId: slackUser.id})
+    if (user == null) {
+      throw new Error(`user not found with slackId ${slackUser.id}`)
     }
-    catch (err) {
-      console.error(err)
-      await slackBot.sendDirectMessage(slackUser.id, `Server error when selling snack. Please try again later.`)
+
+    // sell new snack on the store
+    await Snack.create([{name: snackName, amount: amount, price: price}])
+
+    // return money to user's wallet
+    user.balance += totalPrice
+    newBalance = user.balance
+    await user.save()
+
+    let msg = `Sell *${snackName}* successfully, price: *$NT ${price}* for each.\nReturn *${totalPrice}* to your wallet, your wallet has ${newBalance} now.`
+    await slackBot.sendDirectMessage(slackUser.id, msg)
+    await slackBot.showHomePage(user)
+  }
+  catch (err) {
+    console.error(err)
+    await slackBot.sendDirectMessage(slackUser.id, `Server error when selling snack. Please try again later.`)
+  }
+}
+
+let payMoney = async (slackUser, moneyToPay) => {
+  try {
+    let user = await User.findOne({slackId: slackUser.id})
+    if (user == null) {
+      throw new Error(`user not found with slackId ${slackUser.id}`)
     }
+
+    let admin = await User.findOne({admin: true})
+    if (admin == null) {
+      throw new Error(`admin not found for this workspace`)
+    } else {
+      let payConfirm = require('./views/payConfirm')
+
+      payConfirm.blocks[0].text.text = `${user.name} want to pay NT$ ${moneyToPay} at ${moment().format('LLL')}`
+      payConfirm.blocks[0].accessory.value = `${user.slackId}:${moneyToPay}`
+
+      await slackBot.webClient.chat.postMessage({channel: admin.slackId, blocks: payConfirm.blocks})
+      await slackBot.sendDirectMessage(user.slackId, 'Send notification to admin successfully, wait the admin confirm.')
+    }
+  }
+  catch (err) {
+    console.error(err)
+    slackBot.sendDirectMessage(user.id, 'Server error. Please pay again later')
   }
 }
 

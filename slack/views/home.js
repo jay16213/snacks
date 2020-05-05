@@ -5,8 +5,19 @@ let home = {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: 'You wallet has *$NT ${user.balance}*'
-      }
+        text: ':moneybag: You wallet has *NT$ {user.balance}*'
+      },
+      accessory: {
+        type: 'button',
+        action_id: 'pay:request',
+				text: {
+					type: 'plain_text',
+					text: 'Pay :dollar:',
+					emoji: true
+				},
+        style: 'danger',
+				value: 'pay'
+			}
     },
     {
       type: 'context',
