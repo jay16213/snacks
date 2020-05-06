@@ -32,12 +32,14 @@ slackInteractives.action({actionId: 'sell'}, async (payload, res) => {
   await slackBot.showSellModal(payload.trigger_id)
 })
 
+// user press pay button
 slackInteractives.action({actionId: 'pay:request'}, async (payload, res) => {
   console.log('pay request action', payload)
   await slackBot.showPayModal(payload.trigger_id)
 })
 
-slackInteractives.action({actionId: 'pay:confirm'}, async (payload, res) => {
+// admin confirm the user payment
+slackInteractives.action({actionId: 'payment:confirm'}, async (payload, res) => {
   console.log('pay confirm action', payload)
 
   let substr = payload.actions[0].value.split(':')
@@ -52,6 +54,22 @@ slackInteractives.action({actionId: 'pay:confirm'}, async (payload, res) => {
     user.balance += payment
     await user.save()
     await slackBot.sendDirectMessage(user.slackId, `Admin has verified your payment. Your wallet has ${user.balance} now.`)
+  }
+})
+
+// admin deny the user payment
+slackInteractives.action({actionId: 'payment:deny'}, async (payload, res) => {
+  console.log('pay deny action', payload)
+
+  let substr = payload.actions[0].value.split(':')
+  let slackUserId = substr[0]
+
+  let user = await User.findOne({slackId: slackUserId})
+
+  if (user == null) {
+    await slackBot.sendDirectMessage(payload.user.id, 'user not found')
+  } else {
+    await slackBot.sendDirectMessage(user.slackId, `Admin deny your payment.`)
   }
 })
 
@@ -71,6 +89,7 @@ slackInteractives.viewSubmission('sell:submit', async (payload) => {
   await sellSnacks(payload.user, snackName, amount, totalPrice)
 })
 
+// user pay money
 slackInteractives.viewSubmission('pay:submit', async (payload, res) => {
   console.log('pay view subission', payload)
 
@@ -182,8 +201,11 @@ let payMoney = async (slackUser, moneyToPay) => {
     } else {
       let payConfirm = require('./views/payConfirm')
 
-      payConfirm.blocks[0].text.text = `${user.name} want to pay NT$ ${moneyToPay} at ${moment().format('LLL')}`
-      payConfirm.blocks[0].accessory.value = `${user.slackId}:${moneyToPay}`
+      payConfirm.blocks[0].text.text = `:bank: ${user.name} want to pay`
+      payConfirm.blocks[1].fields[0].text = `:dollar: *Payment:*\n$NT ${moneyToPay}`
+      payConfirm.blocks[1].fields[1].text = `:calendar: *Time:*\n${moment().format('LLL')}`
+      payConfirm.blocks[2].elements[0].value = `${user.slackId}:${moneyToPay}`
+      payConfirm.blocks[2].elements[1].value = `${user.slackId}:deny`
 
       await slackBot.webClient.chat.postMessage({channel: admin.slackId, blocks: payConfirm.blocks})
       await slackBot.sendDirectMessage(user.slackId, 'Send notification to admin successfully, wait the admin confirm.')
