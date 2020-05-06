@@ -17,7 +17,7 @@ slackInteractives.action({actionId: RegExp('buy:.*')}, async (payload, res) => {
 
   let substr = action.value.split(':')
   snackName = substr[0]
-  price = parseInt(substr[1])
+  price = parseInt(substr[1], 10)
 
   try {
     await buySnacks(slackUser, snackName, price)
@@ -44,7 +44,7 @@ slackInteractives.action({actionId: 'payment:confirm'}, async (payload, res) => 
 
   let substr = payload.actions[0].value.split(':')
   let slackUserId = substr[0]
-  let payment = parseInt(substr[1])
+  let payment = parseInt(substr[1], 10)
 
   let user = await User.findOne({slackId: slackUserId})
 
@@ -73,28 +73,33 @@ slackInteractives.action({actionId: 'payment:deny'}, async (payload, res) => {
   }
 })
 
+// user sumit sell form
 slackInteractives.viewSubmission('sell:submit', async (payload) => {
   console.log('sell view subission', payload)
   let viewValues = payload.view.state.values
 
   let snackName = viewValues.snack_name.input.value
-  let amount = parseInt(viewValues.snack_amount.input.value)
-  let totalPrice = parseInt(viewValues.snack_total_price.input.value)
+  let amount = parseInt(viewValues.snack_amount.input.value, 10)
+  let totalPrice = parseInt(viewValues.snack_total_price.input.value, 10)
 
   if (isNaN(amount) || isNaN(totalPrice)) {
-    slackBot.sendDirectMessage(payload.user.id, 'amount and totalPrice must be number')
+    slackBot.sendDirectMessage(payload.user.id, 'amount and totalPrice must be non-negative number')
+    return
+  }
+  if (amount <= 0 || totalPrice <= 0) {
+    slackBot.sendDirectMessage(payload.user.id, 'amount and totalPrice must be non-negative number')
     return
   }
 
   await sellSnacks(payload.user, snackName, amount, totalPrice)
 })
 
-// user pay money
+// user submit money payment form
 slackInteractives.viewSubmission('pay:submit', async (payload, res) => {
   console.log('pay view subission', payload)
 
   let viewValues = payload.view.state.values
-  let moneyToPay = parseInt(viewValues.money.input.value)
+  let moneyToPay = parseInt(viewValues.money.input.value, 10)
 
   if (isNaN(moneyToPay) || moneyToPay <= 0) {
     console.log('invalid money input')
