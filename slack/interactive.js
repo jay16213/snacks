@@ -53,7 +53,11 @@ slackInteractives.action({actionId: 'payment:confirm'}, async (payload, res) => 
   } else {
     user.balance += payment
     await user.save()
-    await slackBot.sendDirectMessage(user.slackId, `Admin has verified your payment. Your wallet has ${user.balance} now.`)
+
+    // notify the user
+    await slackBot.sendDirectMessage(user.slackId, `:+1: Admin has verified your payment. Your wallet has *$NT ${user.balance}* now.`)
+    // notify the admin
+    await slackBot.sendDirectMessage(payload.user.id, `:+1: You has verified this payment at ${moment().format('LLL')}`)
   }
 })
 
@@ -69,7 +73,7 @@ slackInteractives.action({actionId: 'payment:deny'}, async (payload, res) => {
   if (user == null) {
     await slackBot.sendDirectMessage(payload.user.id, 'user not found')
   } else {
-    await slackBot.sendDirectMessage(user.slackId, `Admin deny your payment.`)
+    await slackBot.sendDirectMessage(user.slackId, `:-1: Admin deny your payment.`)
   }
 })
 
@@ -82,12 +86,16 @@ slackInteractives.viewSubmission('sell:submit', async (payload) => {
   let amount = parseInt(viewValues.snack_amount.input.value, 10)
   let totalPrice = parseInt(viewValues.snack_total_price.input.value, 10)
 
+  if (snackName.length >= 20) {
+    await slackBot.sendDirectMessage(payload.user.id, 'snackName is too long')
+    return
+  }
   if (isNaN(amount) || isNaN(totalPrice)) {
-    slackBot.sendDirectMessage(payload.user.id, 'amount and totalPrice must be non-negative number')
+    await slackBot.sendDirectMessage(payload.user.id, 'amount and totalPrice must be non-negative number')
     return
   }
   if (amount <= 0 || totalPrice <= 0) {
-    slackBot.sendDirectMessage(payload.user.id, 'amount and totalPrice must be non-negative number')
+    await slackBot.sendDirectMessage(payload.user.id, 'amount and totalPrice must be non-negative number')
     return
   }
 
@@ -207,7 +215,7 @@ let payMoney = async (slackUser, moneyToPay) => {
       let payConfirm = require('./views/payConfirm')
 
       payConfirm.blocks[0].text.text = `:bank: ${user.name} want to pay`
-      payConfirm.blocks[1].fields[0].text = `:dollar: *Payment:*\n$NT ${moneyToPay}`
+      payConfirm.blocks[1].fields[0].text = `>:dollar: *Payment:*\n>$NT ${moneyToPay}`
       payConfirm.blocks[1].fields[1].text = `:calendar: *Time:*\n${moment().format('LLL')}`
       payConfirm.blocks[2].elements[0].value = `${user.slackId}:${moneyToPay}`
       payConfirm.blocks[2].elements[1].value = `${user.slackId}:deny`

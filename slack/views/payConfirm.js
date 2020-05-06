@@ -12,7 +12,7 @@ let payConfirm = {
 			fields: [
 				{
 					type: 'mrkdwn',
-					text: ':dollar: *Payment:*\n$NT 100'
+					text: '>:dollar: *Payment:*\n>$NT 100'
 				},
 				{
 					type: 'mrkdwn',
