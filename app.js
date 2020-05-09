@@ -8,7 +8,13 @@ const mongoose = require('mongoose')
 
 // database setup
 mongoose.Promise = global.Promise
-mongoose.connect(config.dbUrl, { useUnifiedTopology: true, useNewUrlParser: true })
+mongoose.connect(config.dbUrl, { useUnifiedTopology: true, useNewUrlParser: true }, (err) => {
+    if (err) {
+        console.error('Error occurred while connecting to DB: ', err)
+    } else {
+        console.log('DB connection established successfully')
+    }
+})
 
 // express
 const port = normalizePort(process.env.PORT || '3000');

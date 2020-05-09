@@ -1,7 +1,7 @@
 {
   "name": "snacks",
   "version": "1.0.0",
-  "description": "",
+  "description": "snacks system based on slack bot",
   "main": "app.js",
   "dependencies": {
     "@slack/events-api": "^2.3.2",
