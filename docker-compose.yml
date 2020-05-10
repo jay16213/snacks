@@ -3,13 +3,21 @@ services:
   app:
     container_name: snacks
     restart: always
+    environment:
+      - TZ=Asia/Taipei
     build: .
     ports:
       - "3000:3000"
     links:
       - mongo
+
   mongo:
     container_name: mongo
     image: mongo
+    restart: always
+    environment:
+      - TZ=Asia/Taipei
+    volumes:
+      - ./data:/data/db
     ports:
       - "27018:27017"

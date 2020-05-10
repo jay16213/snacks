@@ -39,7 +39,7 @@ slackInteractives.action({actionId: 'pay:request'}, async (payload, res) => {
 })
 
 // admin confirm the user payment
-slackInteractives.action({actionId: 'payment:confirm'}, async (payload, res) => {
+slackInteractives.action({actionId: 'payment:confirm'}, async (payload, respond) => {
   console.log('pay confirm action', payload)
 
   let substr = payload.actions[0].value.split(':')
@@ -57,12 +57,16 @@ slackInteractives.action({actionId: 'payment:confirm'}, async (payload, res) => 
     // notify the user
     await slackBot.sendDirectMessage(user.slackId, `:+1: Admin has verified your payment. Your wallet has *$NT ${user.balance}* now.`)
     // notify the admin
-    await slackBot.sendDirectMessage(payload.user.id, `:+1: You has verified this payment at ${moment().format('LLL')}`)
+    let payVerify = require('./views/payVerify')
+    payVerify.blocks[0].text.text = `:bank: ${user.name} want to pay`
+    payVerify.blocks[1].fields[0].text = `>:dollar: *Payment*\n>$NT ${payment}`
+    payVerify.blocks[2].text.text = `:+1: You has verified this payment at ${moment().format('LLL')}`
+    await respond({blocks: payVerify.blocks, replace_original: true })
   }
 })
 
 // admin deny the user payment
-slackInteractives.action({actionId: 'payment:deny'}, async (payload, res) => {
+slackInteractives.action({actionId: 'payment:deny'}, async (payload, respond) => {
   console.log('pay deny action', payload)
 
   let substr = payload.actions[0].value.split(':')
@@ -73,7 +77,13 @@ slackInteractives.action({actionId: 'payment:deny'}, async (payload, res) => {
   if (user == null) {
     await slackBot.sendDirectMessage(payload.user.id, 'user not found')
   } else {
+    // notify the user
     await slackBot.sendDirectMessage(user.slackId, `:-1: Admin deny your payment.`)
+    let payVerify = require('./views/payVerify')
+    payVerify.blocks[0].text.text = `:bank: ${user.name} want to pay`
+    payVerify.blocks.splice(1, 1) // remove blocks[1]
+    payVerify.blocks[1].text.text = `:+1: You has denyed this payment at ${moment().format('LLL')}`
+    await respond({blocks: payVerify.blocks, replace_original: true })
   }
 })
 
@@ -215,8 +225,7 @@ let payMoney = async (slackUser, moneyToPay) => {
       let payConfirm = require('./views/payConfirm')
 
       payConfirm.blocks[0].text.text = `:bank: ${user.name} want to pay`
-      payConfirm.blocks[1].fields[0].text = `>:dollar: *Payment:*\n>$NT ${moneyToPay}`
-      payConfirm.blocks[1].fields[1].text = `:calendar: *Time:*\n${moment().format('LLL')}`
+      payConfirm.blocks[1].fields[0].text = `>:dollar: *Payment*\n>$NT ${moneyToPay}`
       payConfirm.blocks[2].elements[0].value = `${user.slackId}:${moneyToPay}`
       payConfirm.blocks[2].elements[1].value = `${user.slackId}:deny`
 

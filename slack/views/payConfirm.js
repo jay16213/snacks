@@ -12,11 +12,7 @@ let payConfirm = {
 			fields: [
 				{
 					type: 'mrkdwn',
-					text: '>:dollar: *Payment:*\n>$NT 100'
-				},
-				{
-					type: 'mrkdwn',
-					text: ':calendar: *Time:*\nMar 10, 2015 (3 years, 5 months)'
+					text: '>:dollar: *Payment*\n>$NT 100'
 				}
 			]
 		},
