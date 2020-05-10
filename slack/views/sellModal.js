@@ -68,6 +68,15 @@ let sellModal = {
         "type": "plain_text",
         "text": "Total price"
       }
+    },
+    {
+      "type": "context",
+      "elements": [
+        {
+          "type": "mrkdwn",
+          "text": "*price formula:* round( round(totalPrice/amount)/5 ) * 5"
+        }
+      ]
     }
   ]
 }

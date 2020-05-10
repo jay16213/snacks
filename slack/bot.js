@@ -1,7 +1,7 @@
 const webApi = require('@slack/web-api')
 const moment = require('moment')
-const User = require('../models/user')
 const Snack = require('../models/snack')
+const homePageView = require('./views/home')
 const sellModal = require('./views/sellModal')
 const payModal = require('./views/payModal')
 const config  = require('../config.json')
@@ -47,7 +47,7 @@ module.exports = {
   },
 
   showHomePage: async (user) => {
-    let viewPayload = require('./views/home')
+    let viewPayload = JSON.parse(JSON.stringify(homePageView))
 
     // show user's wallet and timestamp
     viewPayload.blocks[0].text.text = `:moneybag: Your wallet has *$NT ${user.balance}*`
@@ -63,9 +63,15 @@ module.exports = {
           }
         }
       } else {
-        viewPayload.blocks[4].elements = [] // clear the array
+        let blockOffset = 4, numOfSnacks = 0
         snacks.forEach(snack => {
-          viewPayload.blocks[4].elements.push({
+          if (++numOfSnacks >= 25) {
+            numOfSnacks = 1
+            blockOffset++
+            viewPayload.blocks.splice(blockOffset, 0, {type: 'actions', elements: []})
+          }
+          console.log(`insert ${numOfSnacks} to block ${blockOffset}`)
+          viewPayload.blocks[blockOffset].elements.push({
             type: 'button',
             action_id: `buy:${snack.name}`,
             text: {
