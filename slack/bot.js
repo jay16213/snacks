@@ -70,7 +70,7 @@ module.exports = {
             blockOffset++
             viewPayload.blocks.splice(blockOffset, 0, {type: 'actions', elements: []})
           }
-          console.log(`insert ${numOfSnacks} to block ${blockOffset}`)
+          console.debug(`insert ${numOfSnacks} to block ${blockOffset}`)
           viewPayload.blocks[blockOffset].elements.push({
             type: 'button',
             action_id: `buy:${snack.name}`,
