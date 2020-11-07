@@ -4,7 +4,7 @@
 rollingDays=7
 dumpFilename="mongodb"
 dumpTmpDir="/tmp/mongo-dump-tmp"
-backupPath="./snacksdb-backup"
+backupPath="/home/jay/snacksdb-backup"
 username=""
 password=""
 hostname="127.0.0.1:27018"

@@ -183,6 +183,7 @@ let sellSnacks = async (slackUser, snackName, amount, totalPrice) => {
     let snackExists = await Snack.exists({name: snackName})
     if (snackExists) {
       await slackBot.sendDirectMessage(slackUser.id, `${snackName} has existed at store, you can't not sell the same thing until it sold out.`)
+      return
     }
 
     let price = calculatePrice(amount, totalPrice)
