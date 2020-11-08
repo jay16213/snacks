@@ -5,6 +5,7 @@ const homePageView = require('./views/home')
 const sellModal = require('./views/sellModal')
 const payModal = require('./views/payModal')
 const config  = require('../config.json')
+const appVersion = require('../package.json')
 
 // An access token (from your Slack app or custom integration - xoxp, xoxb)
 let webClient = new webApi.WebClient(config.slackToken)
@@ -52,6 +53,8 @@ module.exports = {
     // show user's wallet and timestamp
     viewPayload.blocks[0].text.text = `:moneybag: Your wallet has *$NT ${user.balance}*`
     viewPayload.blocks[1].elements[0].text = `_last updated: ${moment().format('LLL')}_`
+
+    let blockOffset = 4
     try {
       let snacks = await Snack.find()
       if (snacks.length <= 0) {
@@ -63,7 +66,7 @@ module.exports = {
           }
         }
       } else {
-        let blockOffset = 4, numOfSnacks = 0
+        let numOfSnacks = 0
         snacks.forEach(snack => {
           if (++numOfSnacks >= 25) {
             numOfSnacks = 1
@@ -101,6 +104,7 @@ module.exports = {
           })
         })
       }
+      viewPayload.blocks[blockOffset].elements[0].text = `_bot version: v${appVersion}_`
     } catch (err) {
       console.error(err)
       viewPayload.blocks[4] = {

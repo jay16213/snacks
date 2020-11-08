@@ -63,7 +63,16 @@ let home = {
         style: 'primary',
         value: 'sell'
       }
-    }
+    },
+    {
+			type: 'context',
+			elements: [
+				{
+					type: 'mrkdwn',
+					text: 'bot version: vX.Y.Z'
+				}
+			]
+		}
   ]
 }
 
