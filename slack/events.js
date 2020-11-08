@@ -1,10 +1,10 @@
 const slackEventsApi = require('@slack/events-api')
 const slackBot = require('./bot')
 const User = require('../models/user')
-const config  = require('../config.json')
+const config  = require('../config')
 
 // init slack tools
-const slackEvents = slackEventsApi.createEventAdapter(config.slackSigningSecret)
+const slackEvents = slackEventsApi.createEventAdapter(config.SLACK_SIGNING_SECRET)
 
 // https://api.slack.com/events/app_home_opened
 slackEvents.on('app_home_opened', async (event) => {

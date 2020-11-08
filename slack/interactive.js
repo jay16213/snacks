@@ -3,10 +3,10 @@ const moment = require('moment')
 const Snack = require('../models/snack')
 const User = require('../models/user')
 const slackBot = require('./bot')
-const config  = require('../config.json')
+const config  = require('../config')
 
 // init slack tools
-const slackInteractives = slackInteractiveMessages.createMessageAdapter(config.slackSigningSecret)
+const slackInteractives = slackInteractiveMessages.createMessageAdapter(config.SLACK_SIGNING_SECRET)
 
 // handle a buy action
 slackInteractives.action({actionId: RegExp('buy:.*')}, async (payload, res) => {
