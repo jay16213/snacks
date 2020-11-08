@@ -76,13 +76,13 @@ module.exports = {
           console.debug(`insert ${numOfSnacks} to block ${blockOffset}`)
           viewPayload.blocks[blockOffset].elements.push({
             type: 'button',
-            action_id: `buy:${snack.name}`,
+            action_id: `buy:${snack.id}`,
             text: {
               type: 'plain_text',
               text: `${snack.name} | $NT ${snack.price}`,
               emoji: true
             },
-            value: `${snack.name}:${snack.price}`,
+            value: `${snack.id}:${snack.price}`,
             confirm: {
               title: {
                 type: 'plain_text',

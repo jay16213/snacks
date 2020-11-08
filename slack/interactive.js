@@ -17,11 +17,11 @@ slackInteractives.action({actionId: RegExp('buy:.*')}, async (payload, res) => {
   let action = payload.actions[0]
 
   let substr = action.value.split(':')
-  snackName = substr[0]
+  snackID = parseInt(substr[0], 10)
   price = parseInt(substr[1], 10)
 
   try {
-    await buySnacks(slackUser, snackName, price)
+    await buySnacks(slackUser, snackID, price)
   }
   catch (err) {
     console.error(err)
@@ -142,10 +142,11 @@ slackInteractives.viewSubmission('pay:submit', async (payload, res) => {
   await payMoney(payload.user, moneyToPay)
 })
 
-let buySnacks = async (slackUser, snackName, price) => {
+let buySnacks = async (slackUser, snackID, price) => {
+  const transaction = await sequelize.transaction()
   try {
-    let user = await User.findOne({slackId: slackUser.id})
-    let snack = await Snack.findOne({name: snackName})
+    let user = await User.findOne({where: {slackID: slackUser.id}, transaction: transaction})
+    let snack = await Snack.findByPk(snackID, {transaction: transaction})
 
     if (user == null) {
       throw new Error(`user not found with slackId ${slackUser.id}`)
@@ -156,36 +157,38 @@ let buySnacks = async (slackUser, snackName, price) => {
     }
 
     // sell one snack to user
-    snack.amount--
-
-    if (snack.amount == 0) {
-      await Snack.deleteOne({name: snack.name})
+    snack.inventory--
+    if (snack.inventory <= 0) {
+      await Snack.destroy({where: {id: snackID}, transaction: transaction})
       console.log(`${snack.name} has sold out, delet from db.`)
     } else {
-      // save amount
-      await snack.save()
+      await Snack.decrement('inventory', {where: {id: snackID}, transaction: transaction})
     }
 
-    console.log(`Sold one ${snack.name} to ${user.name}, left amount: ${snack.amount}`)
+    console.log(`Sold one ${snack.name} to ${user.name}, left amount: ${snack.inventory}`)
 
     // user pay for snack
     user.balance -= snack.price
-    await user.save()
+    await user.save({ fields: ['balance'], transaction: transaction})
+    await transaction.commit()
 
     let timestamp = moment().format('LLL')
-    let msg = `You pay *$NT ${price}* for one *${snackName}* at ${timestamp}.\nYour wallet has *$NT ${user.balance}* now.`
+    let msg = `You pay *$NT ${price}* for one *${snack.name}* at ${timestamp}.\nYour wallet has *$NT ${user.balance}* now.`
     await slackBot.sendDirectMessage(slackUser.id, msg)
     await slackBot.showHomePage(user)
   }
   catch (err) {
     console.error(err)
+    await transaction.rollback()
     await slackBot.sendDirectMessage(slackUser.id, `Server error when buying ${snackName}.`)
   }
 }
 
 let sellSnacks = async (slackUser, snackName, amount, totalPrice) => {
+  const transaction = await sequelize.transaction()
+
   try {
-    const snackExists = await Snack.findOne({where: {name: snackName}})
+    const snackExists = await Snack.findOne({where: {name: snackName}, transaction: transaction})
     if (snackExists) {
       await slackBot.sendDirectMessage(slackUser.id, `${snackName} has existed at store, you can't not sell the same thing until it sold out.`)
       return
@@ -195,19 +198,16 @@ let sellSnacks = async (slackUser, snackName, amount, totalPrice) => {
     let newBalance = 0
 
     // sell new snack on the store
-    // step 1: create a db transaction
-    const transaction = await sequelize.transaction()
-
-    // step 2: find user and return money to user's wallet
-    let user = await User.findOne({where: {slackID: slackUser.id}}, transaction)
+    // step 1: find user and return money to user's wallet
+    let user = await User.findOne({where: {slackID: slackUser.id}, transaction: transaction})
     if (user == null) {
       throw new Error(`user not found with slackId ${slackUser.id}`)
     }
 
     user.balance += totalPrice
 
-    // step 3: create new snack and update user wallet
-    await Snack.create({name: snackName, inventory: amount, price: price}, transaction)
+    // step 2: create new snack and update user wallet
+    await Snack.create({name: snackName, inventory: amount, price: price}, {transaction: transaction})
     await user.save({ fields: ['balance'], transaction: transaction})
     await transaction.commit()
 
