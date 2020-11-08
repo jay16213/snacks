@@ -14,7 +14,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   Snack.init({
-    id: { type: DataTypes.INTEGER, allowNull: false, primaryKey: true },
     name: { type: DataTypes.STRING, allowNull: false },
     price: { type: DataTypes.INTEGER, allowNull: false },
     inventory: { type: DataTypes.INTEGER, allowNull: false }

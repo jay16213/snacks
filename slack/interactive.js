@@ -1,9 +1,10 @@
 const slackInteractiveMessages = require('@slack/interactive-messages')
 const moment = require('moment')
-const Snack = require('../models/snack')
-const User = require('../models/user')
+const Snack = require('../models').Snack
+const User = require('../models').User
 const slackBot = require('./bot')
 const config  = require('../config')
+const { sequelize } = require('../models')
 
 // init slack tools
 const slackInteractives = slackInteractiveMessages.createMessageAdapter(config.SLACK_SIGNING_SECRET)
@@ -89,7 +90,7 @@ slackInteractives.action({actionId: 'payment:deny'}, async (payload, respond) =>
 
 // user sumit sell form
 slackInteractives.viewSubmission('sell:submit', async (payload) => {
-  console.log('sell view subission', payload)
+  console.debug('sell view subission', payload)
   let viewValues = payload.view.state.values
 
   let snackName = viewValues.snack_name.input.value
@@ -97,15 +98,19 @@ slackInteractives.viewSubmission('sell:submit', async (payload) => {
   let totalPrice = parseInt(viewValues.snack_total_price.input.value, 10)
 
   if (snackName.length >= 20) {
-    await slackBot.sendDirectMessage(payload.user.id, 'snackName is too long')
+    await slackBot.sendDirectMessage(payload.user.id, '*Sell failed*: snackName is too long')
     return
   }
   if (isNaN(amount) || isNaN(totalPrice)) {
-    await slackBot.sendDirectMessage(payload.user.id, 'amount and totalPrice must be non-negative number')
+    await slackBot.sendDirectMessage(payload.user.id, '*Sell failed*: amount and totalPrice must be non-negative integer')
     return
   }
   if (amount <= 0 || totalPrice <= 0) {
-    await slackBot.sendDirectMessage(payload.user.id, 'amount and totalPrice must be non-negative number')
+    await slackBot.sendDirectMessage(payload.user.id, '*Sell failed*: amount and totalPrice must be non-negative integer')
+    return
+  }
+  if (totalPrice < amount) {
+    await slackBot.sendDirectMessage(payload.user.id, '*Sell failed*: totalPrice is less than amount')
     return
   }
 
@@ -180,7 +185,7 @@ let buySnacks = async (slackUser, snackName, price) => {
 
 let sellSnacks = async (slackUser, snackName, amount, totalPrice) => {
   try {
-    let snackExists = await Snack.exists({name: snackName})
+    const snackExists = await Snack.findOne({where: {name: snackName}})
     if (snackExists) {
       await slackBot.sendDirectMessage(slackUser.id, `${snackName} has existed at store, you can't not sell the same thing until it sold out.`)
       return
@@ -189,25 +194,30 @@ let sellSnacks = async (slackUser, snackName, amount, totalPrice) => {
     let price = calculatePrice(amount, totalPrice)
     let newBalance = 0
 
-    let user = await User.findOne({slackId: slackUser.id})
+    // sell new snack on the store
+    // step 1: create a db transaction
+    const transaction = await sequelize.transaction()
+
+    // step 2: find user and return money to user's wallet
+    let user = await User.findOne({where: {slackID: slackUser.id}}, transaction)
     if (user == null) {
       throw new Error(`user not found with slackId ${slackUser.id}`)
     }
 
-    // sell new snack on the store
-    await Snack.create([{name: snackName, amount: amount, price: price}])
-
-    // return money to user's wallet
     user.balance += totalPrice
-    newBalance = user.balance
-    await user.save()
 
-    let msg = `Sell *${snackName}* successfully, price: *$NT ${price}* for each.\nReturn *${totalPrice}* to your wallet, your wallet has ${newBalance} now.`
+    // step 3: create new snack and update user wallet
+    await Snack.create({name: snackName, inventory: amount, price: price}, transaction)
+    await user.save({ fields: ['balance'], transaction: transaction})
+    await transaction.commit()
+
+    let msg = `Sell *${snackName}* successfully, price: *$NT ${price}* for each.\nReturn *${totalPrice}* to your wallet, your wallet has ${user.balance} now.`
     await slackBot.sendDirectMessage(slackUser.id, msg)
     await slackBot.showHomePage(user)
   }
   catch (err) {
     console.error(err)
+    await transaction.rollback()
     await slackBot.sendDirectMessage(slackUser.id, `Server error when selling snack. Please try again later.`)
   }
 }
