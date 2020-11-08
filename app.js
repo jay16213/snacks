@@ -2,13 +2,13 @@ const express = require('express')
 const slackEvents = require('./slack/events')
 const slackInteractives = require('./slack/interactive')
 const normalizePort = require('normalize-port')
-const config = require('./config.json')
+const config = require('./config')
 // mongodb
 const mongoose = require('mongoose')
 
 // database setup
 mongoose.Promise = global.Promise
-mongoose.connect(config.dbUrl, { useUnifiedTopology: true, useNewUrlParser: true }, (err) => {
+mongoose.connect(config.DB_URL, { useUnifiedTopology: true, useNewUrlParser: true }, (err) => {
     if (err) {
         console.error('Error occurred while connecting to DB: ', err)
     } else {
@@ -17,7 +17,7 @@ mongoose.connect(config.dbUrl, { useUnifiedTopology: true, useNewUrlParser: true
 })
 
 // express
-const port = normalizePort(process.env.PORT || '3000');
+const port = normalizePort(config.PORT);
 const app = express()
 
 app.use('/slack/events', slackEvents.expressMiddleware())

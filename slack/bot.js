@@ -4,11 +4,11 @@ const Snack = require('../models/snack')
 const homePageView = require('./views/home')
 const sellModal = require('./views/sellModal')
 const payModal = require('./views/payModal')
-const config  = require('../config.json')
-const appVersion = require('../package.json')
+const config  = require('../config')
+const appVersion = require('../package.json').version
 
 // An access token (from your Slack app or custom integration - xoxp, xoxb)
-let webClient = new webApi.WebClient(config.slackToken)
+let webClient = new webApi.WebClient(config.SLACK_TOKEN)
 
 module.exports = {
   webClient: webClient,
@@ -104,7 +104,7 @@ module.exports = {
           })
         })
       }
-      viewPayload.blocks[blockOffset].elements[0].text = `_bot version: v${appVersion}_`
+      viewPayload.blocks[blockOffset+3].elements[0].text = `bot version: v${appVersion}`
     } catch (err) {
       console.error(err)
       viewPayload.blocks[4] = {
