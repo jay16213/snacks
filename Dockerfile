@@ -1,17 +1,14 @@
-FROM node:12.16.3-stretch-slim
+FROM node:12.16.3-stretch
 
 # Create app directory
 WORKDIR /usr/src/app
 
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
-COPY package*.json ./
-
-RUN npm install
-
 # Bundle app source
-COPY . .
+RUN git clone -b v1.0.1 https://github.com/jay16213/snacks.git
+
+WORKDIR /usr/src/app/snacks
+RUN npm install
+COPY ./config.json.deploy ./config.json
 
 EXPOSE 3000
 CMD [ "node", "app.js" ]

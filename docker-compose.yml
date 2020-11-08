@@ -2,10 +2,10 @@ version: "3"
 services:
   app:
     container_name: snacks
+    image: snack-bot:1.0.1
     restart: always
     environment:
       - TZ=Asia/Taipei
-    build: .
     ports:
       - "3000:3000"
     links:
