@@ -1,6 +1,6 @@
 {
   "name": "snacks",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "snacks system based on slack bot",
   "main": "app.js",
   "dependencies": {
