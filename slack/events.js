@@ -1,7 +1,7 @@
 const slackEventsApi = require('@slack/events-api')
 const slackBot = require('./bot')
-const User = require('../models/user')
 const config  = require('../config')
+const User = require('../models').User
 
 // init slack tools
 const slackEvents = slackEventsApi.createEventAdapter(config.SLACK_SIGNING_SECRET)
@@ -11,7 +11,7 @@ slackEvents.on('app_home_opened', async (event) => {
   console.log('app home open event', event)
 
   try {
-    let user = await User.findOne({slackId: event.user})
+    let user = await User.findOne({where: {slackID: event.user}})
 
     // the user use this app first time
     if (user == null) {
@@ -20,9 +20,9 @@ slackEvents.on('app_home_opened', async (event) => {
         console.debug(slackUserInfo)
 
         User.create({
-          slackId: event.user,
-          name: slackUserInfo.user.profile.display_name,
-          admin: false,
+          slackID: event.user,
+          name: slackUserInfo.user.profile.display_name || slackUserInfo.user.profile.real_name,
+          isAdmin: false,
           balance: 0,
         }).then(async (newUser) => {
           await slackBot.sendDirectMessage(event.channel, 'Welcome to Snack store! I create a wallet with *$NT 0* for you')

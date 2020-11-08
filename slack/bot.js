@@ -1,6 +1,6 @@
 const webApi = require('@slack/web-api')
 const moment = require('moment')
-const Snack = require('../models/snack')
+const Snack = require('../models').Snack
 const homePageView = require('./views/home')
 const sellModal = require('./views/sellModal')
 const payModal = require('./views/payModal')
@@ -56,7 +56,7 @@ module.exports = {
 
     let blockOffset = 4
     try {
-      let snacks = await Snack.find()
+      const snacks = await Snack.findAll()
       if (snacks.length <= 0) {
         viewPayload.blocks[4] = {
           type: 'section',
@@ -118,7 +118,7 @@ module.exports = {
 
     try {
       console.log('view payload', viewPayload)
-      await webClient.views.publish({user_id: user.slackId, view: viewPayload})
+      await webClient.views.publish({user_id: user.slackID, view: viewPayload})
     }
     catch (err) {
       console.error(err)

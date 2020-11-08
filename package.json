@@ -4,7 +4,7 @@
   "description": "snacks system based on slack bot",
   "main": "app.js",
   "dependencies": {
-    "@slack/events-api": "^2.3.2",
+    "@slack/events-api": "^2.3.4",
     "@slack/interactive-messages": "^1.6.0",
     "@slack/web-api": "^5.8.1",
     "dotenv": "^8.2.0",
@@ -12,10 +12,14 @@
     "install": "^0.13.0",
     "moment": "^2.25.1",
     "mongoose": "^5.9.11",
+    "mysql2": "^2.2.5",
     "normalize-port": "^1.0.0",
-    "npm": "^6.14.6"
+    "npm": "^6.14.6",
+    "sequelize": "^6.3.5"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "sequelize-cli": "^6.2.0"
+  },
   "scripts": {
     "start": "node app.js",
     "dev": "NODE_ENV=development && node app.js",
